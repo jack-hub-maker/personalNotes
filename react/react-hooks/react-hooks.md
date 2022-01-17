@@ -154,7 +154,7 @@ export default Ceshi1
 
 ### 1.4性能优化
 
-####  1.4.1Object.is（浅比较）
+####  1.4.1Object.is（浅比较1）
 
 - Hook 内部使用 Object.is 来比较新/旧 state 是否相等
 - **与 class 组件中的 setState 方法不同，如果你修改状态的时候，传的状态值没有变化，则不重新渲染**
