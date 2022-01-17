@@ -1,4 +1,5 @@
 <!--
+
  * @Descripttion: 
  * @version: 1.0
  * @Author: 
@@ -7,10 +8,10 @@
  * @LastEditTime: 2021-12-31 16:45:02
  * @FilePath: /personalNotes/react/react-hooks/react-hooks.md
  * Copyright 2021 YingJie Xing, All Rights Reserved. 
--->
+   -->
 
 
-# hooks详解：
+# 关于React hooks：
 
 我们都知道react都核心思想就是，将一个页面拆成一堆独立的，可复用的组件，并且用自上而下的单向数据流的形式将这些组件串联起来。但假如你在大型的工作项目中用react，你会发现你的项目中实际上很多react组件冗长且难以复用。尤其是那些写成class的组件，它们本身包含了状态（state），所以复用这类组件就变得很麻烦。*Hook* 是 React 16.8 的新增特性。它可以让你在不编写 class 的情况下使用 state 以及其他的 React 特性。
 
@@ -27,7 +28,7 @@
 |     useRef      | 获取 ref 属性对应的 dom                                      |
 | useLayoutEffect | 作用与useEffect相同，但在所有DOM改变后同步触发               |
 
-## useState & useMemo & useCallback
+## useState 
 
 - **React 假设当你多次调用 useState 的时候，你能保证每次渲染时它们的\**\*\*调用顺序\*\**\*是不变的。**
 - 通过在函数组件里调用它来给组件添加一些内部 state，React会 **在重复渲染时保留这个 state**
@@ -36,7 +37,7 @@
   - 在初始化渲染期间，返回的状态 (state) 与传入的第一个参数 (initialState) 值相同
   - 你可以在事件处理函数中或其他一些地方调用这个函数。它类似 class 组件的 this.setState，但是它**不会把新的 state 和旧的 state 进行合并，而是直接替换**
 
-```
+```js
 // 这里可以任意命名，因为返回的是数组，数组解构
 const [state, setState] = useState(initialState);
 ```
@@ -127,7 +128,7 @@ export default Ceshi1
 - **initialState 参数只会在组件的初始化渲染中起作用，后续渲染时会被忽略**
 - **如果初始 state 需要通过复杂计算获得，则可以传入一个函数，在函数中计算并返回初始的 state，此函数只在初始渲染时被调用**
 
-```
+```js
 import { useState } from 'react'
 import { PageContainer } from '@ant-design/pro-layout';
 import { Card, Button, message } from 'antd';
@@ -152,11 +153,9 @@ const Ceshi1 = (props: any) => {
 export default Ceshi1
 ```
 
-### 1.4性能优化
+### 1.4 useState使用Object.is来替换state
 
-####  1.4.1Object.is（浅比较1）
-
-- Hook 内部使用 Object.is 来比较新/旧 state 是否相等
+- **Hook 内部使用 Object.is 来比较新/旧 state 是否相等**
 - **与 class 组件中的 setState 方法不同，如果你修改状态的时候，传的状态值没有变化，则不重新渲染**
 - **与 class 组件中的 setState 方法不同，useState 不会自动合并更新对象。你可以用函数式的 setState 结合展开运算符来达到合并更新对象的效果**
 
@@ -175,94 +174,184 @@ function Counter(){
 }
 ```
 
-#### 1.4.2减少渲染次数
 
-- **默认情况，只要父组件状态变了（不管子组件依不依赖该状态），子组件也会重新渲染**
-- 一般的优化：
-  1. **类组件**：可以使用 `pureComponent` ；
-  2. **函数组件**：使用 `React.memo` ，将函数组件传递给 `memo` 之后，就会返回一个新的组件，新组件的功能：**如果接受到的属性不变，则不重新渲染函数**；
-- 我理解的useMemo 的主要作用就是，通过一些变量计算得到新的值。通过把这些变量加入依赖 deps，当 deps 中的值均未发生变化时，跳过这次计算。useMemo 中传入的函数，将在 render 函数调用过程被同步调用。所以可以使用 useMemo 缓存一些相对耗时的计算。
+
+### 1.5 能用其他状态计算出来就不用单独声明状态
+
+**一个 state 必须不能通过其它 state/props 直接计算出来，否则就不用定义 state。**
 
 ```js
-const memoizedValue = useMemo(() => computeExpensiveValue(a, b), [a, b]);
-```
+const SomeComponent = (props) => {
+  
+  const [source, setSource] = useState([
+      {type: 'done', value: 1},
+      {type: 'doing', value: 2},
+  ])
+  
+  const [doneSource, setDoneSource] = useState([])
+  const [doingSource, setDoingSource] = useState([])
 
-一个常用来做性能优化的 hook,看个栗子
-
-```js
-const MemoDemo = ({ count, color }) => {
-   useEffect(() => {
-       console.log('count effect')
-   }, [count])
-   const newCount = useMemo(() => {
-       console.log('count 触发了')
-       return Math.round(count)
-   }, [count])
-   const newColor = useMemo(() => {
-       console.log('color 触发了')
-       return color
-   }, [color])
-   return <div>
-       <p>{count}</p>
-       <p>{newCount}</p>
-   {newColor}</div>
+  useEffect(() => {
+    setDoingSource(source.filter(item => item.type === 'doing'))
+    setDoneSource(source.filter(item => item.type === 'done'))
+  }, [source])
+  
+  return (
+    <div>
+       ..... 
+    </div>
+  )
 }
 ```
 
-我们这个时候将传入的 count 值改变 的，log 执行循序
-
-> count 触发了
->
-> count effect
-
-- 可以看出有点类似 effect, 监听 a、b 的值根据值是否变化来决定是否更新 UI
-- memo 是在 DOM 更新前触发的，就像官方所说的，类比生命周期就是 shouldComponentUpdate
-- 对比 **React.Memo** 默认是是基于 props 的浅对比，意思是对象只比较内存地址，只要你内存地址没变，管你对象里面的值千变万化都不会触发render。当然也可以开启第二个参数进行深对比。在最外层包装了整个组件，并且需要手动写一个方法比较那些具体的 props 不相同才进行 re-render。使用 **useMemo **可以精细化控制，进行局部 Pure
-
-
-
-**useCallback**：useMemo 解决了值的缓存的问题，那么函数呢？useCallback接收一个内联回调函数参数和一个依赖项数组（子组件依赖父组件的状态，即子组件会使用到父组件的值） ，useCallback 会返回该回调函数的 memoized 版本，该回调函数仅在某个依赖项改变时才会更新
+上面的示例中，变量 `doneSource` 和 `doingSource` 可以通过变量 `source` 计算出来，那就不要定义 `doneSource` 和 `doingSource` 了！
 
 ```js
-const memoizedCallback = useCallback(
- () => {
-   doSomething(a, b);
- },
- [a, b],
-);
-```
-
-useCallback 的用法和上面 useMemo 差不多，是专门用来缓存函数的 hooks
-
-```js
-// 下面的情况可以保证组件重新渲染得到的方法都是同一个对象，避免在传给onClick的时候每次都传不同的函数引用
-import React, { useState, useCallback } from 'react'
-
-function MemoCount() {
-   const [value, setValue] = useState(0)
-
-   memoSetCount = useCallback(()=>{
-       setValue(value + 1)
-   },[])
-
-   return (
-       <div>
-           <button
-               onClick={memoSetCount}
-               >
-               Update Count
-           </button>
-           <div>{value}</div>
-       </div>
-   )
+const SomeComponent = (props) => {
+  
+  const [source, setSource] = useState([
+      {type: 'done', value: 1},
+      {type: 'doing', value: 2},
+    ])
+  
+  const doneSource = useMemo(()=> source.filter(item => item.type === 'done'), [source]);
+  const doingSource = useMemo(()=> source.filter(item => item.type === 'doing'), [source]);
+  
+  return (
+    <div>
+       ..... 
+    </div>
+  )
 }
-export default MemoCount
 ```
+
+一般在项目中此类问题都比较隐晦，层层传递，在 Code Review 中很难一眼看出。如果能把变量定义清楚，那事情就成功了一半。
+
+### 1.6 保证数据源唯一
+
+**在项目中同一个数据，保证只存储在一个地方。**
+
+不要既存在 redux 中，又在组件中定义了一个 state 存储。
+
+不要既存在父级组件中，又在当前组件中定义了一个 state 存储。
+
+不要既存在 url query 中，又在组件中定义了一个 state 存储。
+
+```js
+function SearchBox({ data }) {
+  const [searchKey, setSearchKey] = useState(getQuery('key'));
+
+  const handleSearchChange = e => {
+    const key = e.target.value;
+    setSearchKey(key);
+    history.push(`/movie-list?key=${key}`);
+  }
+
+  return (
+      <input
+        value={searchKey}
+        placeholder="Search..."
+        onChange={handleSearchChange}
+      />
+  );
+}
+```
+
+在上面的示例中，`searchKey` 存储在两个地方，既在 url query 上，又定义了一个 state。完全可以优化成下面这样：
+
+```js
+function SearchBox({ data }) {
+  const searchKey = parse(localtion.search)?.key;
+
+  const handleSearchChange = e => {
+    const key = e.target.value;
+    history.push(`/movie-list?key=${key}`);
+  }
+
+  return (
+      <input
+        value={searchKey}
+        placeholder="Search..."
+        onChange={handleSearchChange}
+      />
+  );
+}
+```
+
+在实际项目开发中，此类问题也是比较隐晦，编码时应注意。
+
+### 1.7 useState 适当合并
+
+项目中有木有写过这样的代码：
+
+```js
+const [firstName, setFirstName] = useState();
+const [lastName, setLastName] = useState();
+const [school, setSchool] = useState();
+const [age, setAge] = useState();
+const [address, setAddress] = useState();
+
+const [weather, setWeather] = useState();
+const [room, setRoom] = useState();
+```
+
+反正我最开始是写过，useState 拆分过细，导致代码中一大片 useState。
+
+我建议，同样含义的变量可以合并成一个 state，代码可读性会提升很多：
+
+```js
+const [userInfo, setUserInfo] = useState({
+  firstName,
+  lastName,
+  school,
+  age,
+  address
+});
+
+const [weather, setWeather] = useState();
+const [room, setRoom] = useState();
+```
+
+当然这种方式我们在变更变量时，一定不要忘记带上老的字段，比如我们只想修改 `firstName`：
+
+```js
+setUserInfo(s=> ({
+  ...s,
+  fristName,
+}))
+```
+
+其实如果是 React Class 组件，state 是会自动合并的：
+
+```js
+this.setState({
+  firstName
+})
+```
+
+在 Hooks 中，可以有这种用法吗？其实是可以的，我们自己封装一个 Hooks 就可以，比如 ahooks 的 [useSetState](https://link.zhihu.com/?target=https%3A//ahooks.js.org/zh-CN/hooks/use-set-state)，就封装了类似的逻辑：
+
+```js
+const [userInfo, setUserInfo] = useSetState({
+  firstName,
+  lastName,
+  school,
+  age,
+  address
+});
+
+// 自动合并
+setUserInfo({
+  firstName
+})
+```
+
+
 
 ## useEffect
 
 - **effect（副作用）：指那些没有发生在数据向视图转换过程中的逻辑，如 `ajax` 请求、访问原生`dom` 元素、本地持久化缓存、绑定/解绑事件、添加订阅、设置定时器、记录日志等。**
-- useEffect 就是一个 Effect Hook，给函数组件增加了操作副作用的能力。它跟 class 组件中的 `componentDidMount`、`componentDidUpdate` 和 `componentWillUnmount` 具有相同的用途，只不过被合并成了一个 API
+- useEffect 就是一个 Effect Hook，给函数组件增加了操作副作用的能力。它就是 class 组件中的 `componentDidMount`、`componentDidUpdate` 和 `componentWillUnmount` 三个的组合API
 - **useEffect 接收一个函数，该函数会在组件渲染到屏幕之后才执行，该函数有要求：要么返回一个能清除副作用的函数，要么就不返回任何内容**
 - 与 `componentDidMount` 或 `componentDidUpdate` 不同，使用 useEffect 调度的 effect 不会阻塞浏览器更新屏幕，这让你的应用看起来响应更快。大多数情况下，effect 不需要同步地执行。在个别情况下（例如测量布局），有单独的 useLayoutEffect Hook 可以使用，其 API 与 useEffect 相同。
 
@@ -363,7 +452,7 @@ useEffect(() => {
 
 6.useEffect的一些其他规则：
 
-> 1.useEffect 里面使用到的state的值, 固定在了useEffect内部， 不会被改变，除非useEffect刷新，重新固定state的值
+> useEffect 里面使用到的state的值, 固定在了useEffect内部， 不会被改变，除非useEffect刷新，重新固定state的值
 
 ```react
  const [count, setCount] = useState(0)
@@ -377,21 +466,6 @@ useEffect(() => {
     },[])
     //打印的一直是0
 ```
-
-> 2.useEffect不能被判断包裹
-
-```react
-const [count, setCount] = useState(0)
-if(2 < 5){
-   useEffect(() => {
-        console.log('use effect...',count)
-        const timer = setInterval(() => setCount(count +1), 1000)
-        return ()=> clearInterval(timer)
-    }) 
-}
-```
-
-具体原因跟到useEffect的生成执行规则有关系
 
 
 
@@ -414,17 +488,25 @@ if(2 < 5){
   在浏览器执行绘制之前 useLayoutEffect 内部的更新计划将被**同步**刷新
 
   **尽可能使用标准的 useEffect 以避免阻塞视图更新**
-  
-  
+
+
 
 ## **useRef**
 
 - 类组件、React 元素用 React.createRef，函数组件使用 useRef
+
 - useRef 返回一个可变的 ref 对象，其 `current` 属性被初始化为传入的参数（initialValue），它不仅仅可以用来管理 DOM ref 的，它还相当于 this , 可以存放任何变量，很好的解决闭包带来的不方便性。
 
-```js
-const refContainer = useRef(initialValue);
-```
+  #### 为啥使用useRef?
+
+  它不仅仅是用来管理 DOM ref 的，它还相当于 this , 可以存放任何变量，很好的解决闭包带来的不方便性。
+
+  #### 怎么使用useRef?
+
+  ```js
+  const [count, setCount] = useState<number>(0)
+  const countRef = useRef<number>(count)
+  ```
 
 useRef 返回一个可变的 ref 对象，其 .current 属性被初始化为传入的参数（initialValue）。返回的 ref 对象在组件的整个生命周期内保持不变
 
@@ -433,6 +515,12 @@ useRef 返回一个可变的 ref 对象，其 .current 属性被初始化为传�
 对比 createRef -- 在初始化阶段两个是没区别的，但是在更新阶段两者是有区别的。
 
 我们知道,在一个局部函数中，函数每一次 update，都会在把函数的变量重新生成一次。 所以我们每更新一次组件, 就重新创建一次 ref， 这个时候继续使用 createRef 显然不合适，所以官方推出 **useRef**。useRef 创建的 ref 仿佛就像在函数外部定义的一个全局变量，不会随着组件的更新而重新创建。但组件销毁，它也会消失，不用手动进行销毁
+
+### 4.1解决闭包问题
+
+它不仅仅是用来管理 DOM ref 的，它还相当于 this , 可以存放任何变量，很好的解决闭包带来的不方便性。
+
+
 
 前面提到的：
 
@@ -455,59 +543,445 @@ useRef 返回一个可变的 ref 对象，其 .current 属性被初始化为传�
 
 > 就是相当于全局作用域，一处被修改，其他地方全更新...
 
-### useRef知识点合集
+## 
 
-1. 就是相当于全局作用域，一处被修改，其他地方全更新...
+### 4.2因为变更`.current` 属性不会引发组件重新渲染，根据这个特性可以获取状态的前一个值：
 
-```react
- const [count, setCount] = useState(0)
- const countRef = useRef(0)
-useEffect(() => {
-    console.log('use effect...',count)
-    const timer = setInterval(() => {
-        console.log('timer...count:', countRef.current)
-        setCount(++countRef.current)
-    }, 1000)
-    return ()=> clearInterval(timer)
-},[])
+```js
+const Counter = () => {
+  const [count, setCount] = useState<number>(0)
+  const preCountRef = useRef<number>(count)
+
+  useEffect(() => {
+    preCountRef.current = count
+  })
+
+  return (
+    <div>
+      <p>pre count: { preCountRef.current }</p>
+      <p>current count: { count }</p>
+      <button onClick={() => setCount(count + 1)}>加</button>
+    </div>
+  )
+}
+```
+
+从结果可以看出，显示的总是状态的前一个值：
+
+```
+pre count: 4
+
+current count: 5
+```
+
+
+
+## useMemo
+
+### 5.1 为啥使用useMemo?
+
+从 **useEffect** 可以知道，可以通过向其传递一些参数来影响某些函数的执行。 React 检查这些参数是否已更改，并且只有在存在差异的情况下才会执行此。
+
+**useMemo** 做类似的事情，假设有大量方法，并且只想在其参数更改时运行它们，而不是每次组件更新时都运行它们，那就可以使用 **useMemo** 来进行性能优化。
+
+> 记住，传入 `useMemo` 的函数会在**渲染期间执行**。请不要在这个函数内部执行与渲染无关的操作，诸如副作用这类的操作属于 `useEffect` 的适用范畴，而不是 `useMemo` 。
+
+### 5.2 怎么使用useMemo?
+
+```js
+function changeName(name) {
+  return name + '给name做点操作返回新name'
+}
+
+const newName = useMemo(() => {
+	return changeName(name)
+}, [name])
 
 ```
 
-2. 普遍操作，用来操作dom
+### 5.3 场景举例
 
-> const btnRef = useRef(null)
+##### 5.3.1.常规使用，避免重复执行没必要的方法：
 
-> click me 
+我们先来看一个很简单的例子，以下是还未使用 `useMemo` 的代码：
 
-> 活学活用，记得取消绑定事件哦！  return ()=> btnRef.current.removeEventListener('click',onClick, false)
+```js
+import React, { useState, useMemo } from 'react'
 
-```react
-const Hook =()=>{
-    const [count, setCount] = useState(0)
-    const btnRef = useRef(null)
+// 父组件
+const Example = () => {
+  const [time, setTime] = useState<number>(0)
+  const [random, setRandom] = useState<number>(0)
 
-    useEffect(() => {
-        console.log('use effect...')
-        const onClick = ()=>{
-            setCount(count+1)
-        }
-        btnRef.current.addEventListener('click',onClick, false)
-        return ()=> btnRef.current.removeEventListener('click',onClick, false)
-    },[count])
+  return (
+    <div>
+      <button onClick={() => setTime(new Date().getTime())}>获取当前时间</button>
+      <button onClick={() => setRandom(Math.random())}>获取当前随机数</button>
+      <Show time={time}>{random}</Show>
+    </div>
+  )
+}
 
-    return(
-        <div>
-            <div>
-                {count}
-            </div>
-            <button ref={btnRef}>click me </button>
-        </div>
-    )
+type Data = {
+  time: number
+}
+
+// 子组件
+const Show:React.FC<Data> = ({ time, children }) => {
+  function changeTime(time: number): string {
+    console.log('changeTime excuted...')
+    return new Date(time).toISOString()
+  }
+
+  return (
+    <div>
+      <p>Time is: { changeTime(time) }</p>
+      <p>Random is: { children }</p>
+    </div>
+  )
+}
+
+export default Example
+
+```
+
+
+
+在这个例子中，无论你点击的是 **获取当前时间** 按钮还是 **获取当前随机数** 按钮， `<Show />` 这个组件中的方法 `changeTime` 都会执行。
+
+但事实上，点击 **获取当前随机数** 按钮改变的只会是 `children` 这个参数，但我们的 `changeTime` 也会因为子组件的重新渲染而重新执行，这个操作是很没必要的，消耗了无关的性能。
+
+使用 `useMemo` 改造我们的 `<Show />` 子组件：
+
+```js
+const Show:React.FC<Data> = ({ time, children }) => {
+  function changeTime(time: number): string {
+    console.log('changeTime excuted...')
+    return new Date(time).toISOString()
+  }
+
+  const newTime: string = useMemo(() => {
+    return changeTime(time)
+  }, [time])
+
+  return (
+    <div>
+      <p>Time is: { newTime }</p>
+      <p>Random is: { children }</p>
+    </div>
+  )
 }
 
 ```
 
-**总结下就是 ceateRef 每次渲染都会返回一个新的引用，而 useRef 每次都会返回相同的引用**
+这个时候只有点击 **获取当前时间** 才会执行 `changeTime` 这个函数，而点击 **获取当前随机数** 已经不会触发该函数执行了。
+
+##### 5.3.2.useEffect 和 useMemo 区别
+
+- useEffect是在`DOM改变之后触发`，useMemo在`DOM渲染之前就触发`
+- useMemo是在`DOM更新前触发的`，就像官方所说的，类比生命周期就是shouldComponentUpdate
+- useEffect可以帮助我们在`DOM更新完成后执行某些副作用操作`，如数据获取，设置订阅以及手动更改 React 组件中的 DOM 等
+- 不要在这个useMemo函数内部`执行与渲染无关的操作`，诸如`副作用这类的操作属于 useEffect 的适用范畴`，而不是 useMemo
+- 在useMemo中使用`setState你会发现会产生死循环`，并且会有警告，因为useMemo是`在渲染中进行的`，你在其中操作`DOM`后，又会导致触发`memo`
+
+你可能会好奇， `useMemo` 能做的难道不能用 `useEffect` 来做吗？答案是否定的！如果你在子组件中加入以下代码：
+
+```js
+const Show:React.FC<Data> = ({ time, children }) => {
+	//...
+  
+  useEffect(() => {
+    console.log('effect function here...')
+  }, [time])
+
+  const newTime: string = useMemo(() => {
+    return changeTime(time)
+  }, [time])
+	//...
+}
+
+```
+
+你会发现，控制台会打印如下信息：
+
+```js
+> changeTime excuted...
+> effect function here...
+
+```
+
+正如我们一开始说的：传入 `useMemo` 的函数会在**渲染期间执行**。 在此不得不提 `React.memo` ，它的作用是实现整个组件的 `Pure` 功能：
+
+```
+const Show:React.FC<Data> = React.memo(({ time, children }) => {...}
+```
+
+所以简单用一句话来概括 `useMemo` 和 `React.memo` 的区别就是：前者在某些情况下不希望组件对所有 `props` 做浅比较，只想实现局部 `Pure` 功能，即只想对特定的 `props` 做比较，并决定是否局部更新。
+
+
+
+##### 5.3.3.useMemo和React.memo的区别
+
+React.memo
+
+- 包裹`react组件`，来自父组件的props没有发生改变的话，就不会渲染子组件
+- 第二个参数，可以传入一个判断方`isEqual`，可以拿到`preProps`和`props`做比较，返回布尔值，决定是否更新渲染组件
+
+useMemo
+
+- `useMemo`可以用于处理 **颗粒度更细** 的情况，对于组件内的某一部分进行缓存，只有第二个参数更新，才会执行回调，**得到最新的变量/组件，否则不变**。
+- `useCallback`的原理也是一样的，区别就是，它是为了避免函数重复定义，一种**对函数的缓存**
+
+
+
+##### 5.3.4.适当使用useMemo（简单类型计算时并不划算）
+
+在我们处理很简单的基础类型计算时，可能 useMemo 并不划算。
+
+```js
+const a = 1;
+const b = 2;
+
+const c = useMemo(()=> a + b, [a, b]);
+```
+
+比如上面的例子，请问计算 `a+b` 的消耗大？还是记录 `a/b` ，并比较`a/b` 是否变化的消耗大？
+
+明显 `a+b` 消耗更小。
+
+```js
+const a = 1;
+const b = 2;
+const c = a + b;
+```
+
+这笔账大家可以自己算，所以如果是简单的基础类型计算，就不要用 useMemo 了
+
+
+
+## useCallback
+
+### 6.1 useCallback 大部分场景没有提升性能
+
+useCallback 可以记住函数，避免函数重复生成，这样函数在传递给子组件时，可以避免子组件重复渲染，提高性能。
+
+```js
+const someFunc = useCallback(()=> {
+   doSomething();
+}, []);
+
+return <ExpensiveComponent func={someFunc} />
+```
+
+基于以上认知，我一开始的时候，只要是个函数，都加个 useCallback。
+
+但我们要注意，提高性能还必须有另外一个条件，子组件必须使用了 `shouldComponentUpdate` 或者 `React.memo` 来忽略同样的参数重复渲染。
+
+假如 `ExpensiveComponent` 组件只是一个普通组件，是没有任何用的。比如下面这样：
+
+```js
+const ExpensiveComponent = ({ func }) => {
+  return (
+    <div onClick={func}>
+        hello
+    </div>
+  )
+}
+```
+
+必须通过 `React.memo` 包裹 `ExpensiveComponent` ，才会避免参数不变的情况下的重复渲染，提高性能。
+
+```js
+const ExpensiveComponent = React.memo(({ func }) => {
+  return (
+    <div onClick={func}>
+        hello
+    </div>
+  )
+})
+```
+
+**所以，useCallback 是要和 `shouldComponentUpdate/React.memo` 配套使用的。当然，我建议一般项目中不用考虑性能优化的问题，也就是不要使用 useCallback 了，除非有个别非常复杂的组件，单独使用即可。**
+
+### 6.2 useCallback 让代码可读性变差
+
+我看到过一些代码，使用 useCallback 后，大概长这样：
+
+```js
+const someFuncA = useCallback((d, g, x, y)=> {
+   doSomething(a, b, c, d, g, x, y);
+}, [a, b, c]);
+
+const someFuncB = useCallback(()=> {
+   someFuncA(d, g, x, y);
+}, [someFuncA, d, g, x, y]);
+
+useEffect(()=>{
+  someFuncB();
+}, [someFuncB]);
+```
+
+在上面的代码中，变量依赖一层一层传递，最终要判断具体哪些变量变化会触发 useEffect 执行，是一件很头疼的事情。
+
+我期望不要用 useCallback，直接裸写函数就好：
+
+```js
+const someFuncA = (d, g, x, y)=> {
+   doSomething(a, b, c, d, g, x, y);
+};
+
+const someFuncB = ()=> {
+   someFuncA(d, g, x, y);
+};
+
+useEffect(()=>{
+  someFuncB();
+}, [...]);
+```
+
+
+
+### 6.3 useCallback 和 useMemo 区别
+
+- `useMemo` 和 `useCallback` 接收的参数都是一样，都是在其依赖项发生变化后才执行，都是返回缓存的值，区别在于 `useMemo` 返回的是函数运行的结果， `useCallback` 返回的是函数。
+
+```js
+const renderButton = useCallback(
+     () => (
+         <Button type="link">
+            {buttonText}
+         </Button>
+     ),
+     [buttonText]    // 当buttonText改变时才重新渲染renderButton
+);
+
+```
+
+- `useMemo返回的的是一个值`，用于避免在每次渲染时都进行高开销的计算
+
+```js
+const result = useMemo(() => {
+    for (let i = 0; i < 100000; i++) {
+      (num * Math.pow(2, 15)) / 9;
+    }
+}, [num]);
+```
+
+
+
+**个人建议：没事尽量别用 useCallback，在用useCallback时要注意useCallback可以在一些计算操作的时候使用useMemo来进行优化。**
+
+
+
+### 6.4结合useMemo，React.memo和useCallback的知识，来看一个具体的例子：
+
+- 父组件将一个 `【值】 传递给子组件`，若父组件的其他值发生变化时，子组件也会跟着渲染多次，会造成性能浪费； useMemo是将父组件传递给`子组件的值缓存起来`，只有当 useMemo中的第二个参数状态变化时，子组件才重新渲染
+- useMemo便是用于`缓存该函数的执行结果`，仅当依赖项改变后才会重新计算
+
+```js
+修改后如下，注意useMemo缓存的是函数执行的结果, 只有当[count, price]改变时才会重走一遍
+
+const Parent = () => {
+    const [count, setCount] = useState(0);
+    const [color,setColor] = useState("");
+    const [price,setPrice] = useState(10);
+    const handleClick = () => {
+        setCount(count + 1);
+    }
+    const getTotal = useMemo(()=>{
+        console.log("getTotal exec ...") 
+        return count * price
+    },[count, price])
+    
+    return (<div>
+        <div> <input onChange={(e) => setColor(e.target.value)}/></div>
+        <div> <input value={price}  onChange={(e) => setPrice(Number(e.target.value))}/></div>
+        <div> {count} <button onClick={handleClick}>+1</button></div>
+        <div> {getTotal}</div>
+    </div>)
+}
+
+```
+
+> memo
+
+- 父组件name属性或text属性变化都会导致Parent函数重新执行，所以即使传入子组件props没有任何变化，甚至子组件没有依赖于任何props属性，`都会导致子组件重新渲染`
+- 使用memo包裹子组件时，`只有props发生改变子组件才会重新渲染`,以提升一定的性能
+
+```js
+const Child = memo((props: any) => {
+    console.log("子组件更新..."); // 只有当props属性改变，name属性改变时，子组件才会重新渲染
+    return (
+        <div>
+            <h3>子组件</h3>
+            <div>text:{props.name}</div>
+            <div>{new Date().getTime()}</div>
+        </div>
+    )
+})
+
+const Parent = () => {
+    const [text, setText] = useState("")
+    …… ……
+    <Child name ={text}/>
+}
+
+```
+
+- 使用memoAPI来缓存组件
+
+```js
+import React, { memo } from "react"
+const CacheComponent = memo(() => {
+  return <div> ^^ </div>  
+})
+
+```
+
+> useCallback
+
+- 父组件将一个`【方法】传递给子组件`，若父组件的其他状态发生变化时，子组件也会跟着`渲染多次`，会造成性能浪费； usecallback是将父组件传给`子组件的方法给缓存下来`，只有当 usecallback中的第二个参数状态变化时，子组件才`重新渲染`
+- 但如果传入的props`包含函数`，父组件每次重新渲染`都是创建新的函数`，所以传递函数子组件还是会`重新渲染`，即使函数的内容还是一样，我们希望把`函数也缓存起来`，于是引入useCallback
+
+```js
+const Child = memo((props: any) => {
+    console.log("子组件更新..."); // 父级Parent函数有东西变化，Child重新执行，handleInputChange已经指向新的函数实例，所以子组件依然会刷新
+    return (
+        <div>
+            <div>text:{props.name}</div>
+            <div> <input onChange={props.handleInputChange} /></div>
+        </div>
+    )
+})
+const Parent = () => {
+    const [text, setText] = useState("")
+    const [count, setCount] = useState(0)
+    const handleInputChange =useCallback((e) => {
+         setText(e.target.value )
+    },[]) 
+    return (<div>
+            …… ……
+        <Child name={text} handleInputChange={handleInputChange}/>
+    </div>)
+}
+
+```
+
+- useCallback用用于缓存函数，只有当依赖项改变时，函数才会重新执行返回新的函数对于父组件中的函数作为props传递给子组件时，只要父组件数据改变，函数重新执行，`作为props的函数也会产生新的实例`，导致子组件的刷新使用useCallback可以缓存函数。`需要搭配memo使用`
+
+```js
+1 - 在Parent组件里 handleInputChange用useCallback 包裹起来
+2 - 当前 handleInputChange 不依赖与任何项，所以handleInputChange只在初始化的时候调用一次函数就被缓存起来
+
+const handleInputChange =useCallback((e) => {
+     setText(e.target.value )
+},[]) 
+
+3 - 将count加入到依赖项，count变化后重新生成新的函数，改变函数内部的count值
+const handleInputChange =useCallback((e) => {
+     setText(e.target.value )
+},[count]) 
+```
 
 
 
@@ -815,7 +1289,7 @@ export const useWinSize = () => {
 
 在组件内使用该自定义hook：
 
-```arduino
+```js
 import React from "react";
 import { useWinSize } from "../hooks";
 
@@ -832,7 +1306,7 @@ export default () => {
 
 ### API
 
-像之前的我们有一个公用的城市列表接口，在用 redux 的时候可以放在全局公用，不用的话我们就可能需要复制粘贴了。有了 hooks 以后我们只需要 use 一下就可以在其他地方复用了
+比如有一个公用的城市列表接口，在用 redux 的时候可以放在全局公用，不用的话我们就可能需要复制粘贴了。有了 hooks 以后我们只需要 use 一下就可以在其他地方复用了
 
 ```js
 import { useState, useEffect } from 'react';
@@ -898,172 +1372,9 @@ export default useFollow;
 
 
 
-## 需要注意的一些点：
+## 结语
 
-## 1.不要过度依赖 useMemo
+首先作为一名完全拥抱React Hooks 用户，我非常认可 React Hooks 带来的优化。但是不得不说，Hooks很多时候也是一把双刃剑，在使用时还有不少需要注意的地方。
 
-- `useMemo` 本身也有开销。`useMemo` 会「记住」一些值，同时在后续 render 时，将依赖数组中的值取出来和上一次记录的值进行比较，如果不相等才会重新执行回调函数，否则直接返回「记住」的值。这个过程本身就会消耗一定的内存和计算资源。因此，过度使用 `useMemo` 可能会影响程序的性能。
-- 在使用 useMemo 前，应该先思考三个问题：
-  - **传递给 `useMemo` 的函数开销大不大？** 有些计算开销很大，我们就需要「记住」它的返回值，避免每次 render 都去重新计算。如果你执行的操作开销不大，那么就不需要记住返回值。否则，使用 `useMemo` 本身的开销就可能超过重新计算这个值的开销。因此，对于一些简单的 JS 运算来说，我们不需要使用 `useMemo` 来「记住」它的返回值。
-  - **返回的值是原始值吗？** 如果计算出来的是**基本类型**的值（`string`、 `boolean` 、`null`、`undefined` 、`number`、`symbol`），那么每次比较都是相等的，下游组件就不会重新渲染；如果计算出来的是**复杂类型**的值（`object`、`array`），哪怕值不变，但是地址会发生变化，导致下游组件重新渲染。所以我们也需要「记住」这个值。
-  - **在编写自定义 Hook 时，返回值一定要保持引用的一致性。** 因为你无法确定外部要如何使用它的返回值。如果返回值被用做其他 Hook 的依赖，并且每次 re-render 时引用不一致（当值相等的情况），就可能会产生 bug。所以如果自定义 Hook 中暴露出来的值是 object、array、函数等，都应该使用 `useMemo` 。以确保当值相同时，引用不发生变化。
+注：以上对React Hooks的理解仅为个人看法，如有什么错误的地方，欢迎指出。
 
-## 2.useEffect 不能接收 async 作为回调函数
-
-useEffect 接收的函数，要么返回一个能清除副作用的函数，要么就不返回任何内容。而 async 返回的是 promise。
-
-```react
-    useEffect(() => {
-        // 更优雅的方式    
-        const fetchData = async () => {
-            const result = await axios(
-                'https://hn.algolia.com/api/v1/search?query=redux');
-            setData(result.data);
-        };
-        fetchData();
-    }, []);
-```
-
-## 3.hooks想在赋值某个值后迅速拿到该值
-
-想在setsState某个值后迅速拿到该值或者console.log打印该值，之前的类式组件的做法是：
-
-```react
-this.setState({ count: this.state.count + 1 }, () => { console.log(this.state.count) }) 
-```
-
-就像这样，我们就能打印出更新后的count 
-
-不过在hooks里，我们可能需要借助useEffect来实现，比如：useEffect(()=>{ 当number改变时，这里需要做的事情 },[number]);
-
-## 4.useEffect 依赖`[]`时的闭包问题（闭包陷阱）
-
-React 的闭包陷阱指的是当 useEffect 的依赖为`[]`的时候，当 React 函数式组件重新执行，useEffect hooks 并不会重新执行，这时候它内部的变量依旧是上一次的变量，这就构成了“闭包陷阱” ：
-
-```js
-import {useState, useEffect} from 'react'
-
-export default function App() {
-  const [count, setCount] = useState(0)
-
-  // 模拟 DidMount
-  useEffect(() => {
-      // 定时任务
-      // useEffect 中的 count 永远是第一次的 count
-      const timer = setInterval(() => {
-          console.log('setInterval...', count)
-      }, 1000)
-
-      // 清除定时任务
-      return () => clearTimeout(timer)
-  }, []) // 依赖为 []，re-render 不会重新执行 effect 函数
-
-  return (<>
-      <div>count: {count}</div>
-      <div><button onClick={() => setCount(count+1)}>+1</button></div>
-    </>)
-}
-```
-
-![img](https://pic2.zhimg.com/80/v2-098624505d843a674d7379c3357207a5_1440w.jpg)
-
-我们点击`+1` 按钮数次后，页面渲染已经成为 4，而控制台打印的依旧是 0。这就是闭包陷阱。
-
-只有 useEffect 中才会存在闭包陷阱，因为我们重新执行函数式组件的时候，useEffect 不会被重新执行，这时它依赖的就是上一次的变量。
-
-- **注意事项三：useEffect 依赖了「引用类型」可能会出现死循环（React 是通过`Object.is`来判断依赖是否改变的）**
-- **注意事项四：使用 useCallback 缓存函数的时候，如果函数内部使用了外部的变量，则需要把这个变量加进依赖中，否则函数不会检测到该变量的改变。**
-
-#### 如何解决 React Hooks 中的闭包陷阱？
-
-主要有三种方式：
-
-- 使用回调函数赋值
-- 使用 useRef
-- 使用 useReducer
-
-**使用回调函数**
-
-当我们使用 setState 时，新的 state 如果是通过计算旧的 state 得出，那么我们可以将回调函数当作参数传递给 setState。该回调函数将接收先前的 state，并返回一个更新后的值：
-
-```js
-import React, { useState, useEffect, useRef } from 'react'
-
-function App() {
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCount((c) => c + 1)
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-  return <div>{count}</div>;
-}
-
-export default App
-```
-
-**使用 useRef**
-
-同一个 ref 在 React 组件的整个生命周期中只存在一个引用，因此通过 current 永远是可以访问到引用中最新的函数值，不会存在闭包陈旧值的问题。
-
-```js
-import React, { useState, useEffect, useRef } from 'react'
-
-function App() {
-    const [count, setCount] = useState(0)
-
-    const countRef = useRef(0)
-    // 模拟 DidMount
-    useEffect(() => {
-        // 定时任务
-        const timer = setInterval(() => {
-            console.log('setInterval...', countRef.current)
-            setCount(countRef.current++)
-        }, 1000)
-
-        // 清除定时任务
-        return () => clearTimeout(timer)
-    }, []) // 依赖为 []，re-render 不会重新执行 effect 函数
-
-    return <div>count: {count}</div>
-}
-
-export default App
-```
-
-![img](https://pic2.zhimg.com/80/v2-151e49a0077dfd178f0ac3fa50d0133d_1440w.jpg)
-
-**使用 useReducer**
-
-利用 useReducer 获取的`dispatch`方法在组件的生命周期中保持唯一引用，并且总是能操作到最新的值：
-
-```js
-import {useEffect, useReducer} from 'react'
-
-const initialCount = 0;
-
-function reducer(count, action) {
-  switch (action.type) {
-    case 'increment':
-      return count + 1
-    case 'decrement':
-      return count - 1
-    default:
-      throw new Error();
-  }
-}
-
-function App() {
-  const [count, dispatch] = useReducer(reducer, initialCount);
-  useEffect(()=>{
-    setInterval(() => {
-      dispatch({type:'increment'})
-    }, 1000);
-  },[])
-
-  return <div>Count: {count}</div>
-}
-
-export default App
-```
