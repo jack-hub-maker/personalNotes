@@ -1,14 +1,15 @@
 <!--
- * @Descripttion: 
+ * @Descripttion:
  * @version: 1.0
- * @Author: 
+ * @Author:
  * @Date: 2021-12-31 16:47:46
  * @LastEditors: YingJie Xing
  * @LastEditTime: 2021-12-31 16:48:04
  * @FilePath: /personalNotes/js/关于ES6的一些吐槽.md
- * Copyright 2021 YingJie Xing, All Rights Reserved. 
+ * Copyright 2021 YingJie Xing, All Rights Reserved.
 -->
-# 记录一些对ES6的看法
+
+# 记录一些对 ES6 的看法
 
 ## 一、关于取值的吐槽
 
@@ -41,9 +42,7 @@ const f = obj.a + obj.d;
 const g = obj.c + obj.e;
 ```
 
-吐槽：“不会用ES6的解构赋值来取值吗？5行代码用1行代码搞定不香吗？直接用对象名加属性名去取值，要是对象名短还好，很长呢？搞得代码中到处都是这个对象名。”
-
-
+吐槽：“不会用 ES6 的解构赋值来取值吗？5 行代码用 1 行代码搞定不香吗？直接用对象名加属性名去取值，要是对象名短还好，很长呢？搞得代码中到处都是这个对象名。”
 
 **改进**：
 
@@ -55,13 +54,11 @@ const g = c + e;
 
 **反驳**
 
-不是不用ES6的解构赋值，而是服务端返回的数据对象中的属性名不是我想要的，这样取值，不是还得重新创建个遍历赋值。
-
-
+不是不用 ES6 的解构赋值，而是服务端返回的数据对象中的属性名不是我想要的，这样取值，不是还得重新创建个遍历赋值。
 
 **吐槽**
 
-看来你对ES6的解构赋值掌握的还是不够彻底。如果想创建的变量名和对象的属性名不一致，可以这么写：
+看来你对 ES6 的解构赋值掌握的还是不够彻底。如果想创建的变量名和对象的属性名不一致，可以这么写：
 
 ```
 const {a:a1} = obj;
@@ -70,7 +67,7 @@ console.log(a1);// 1
 
 **补充**
 
-ES6的解构赋值虽然好用。但是要注意解构的对象不能为`undefined`、`null`。否则会报错，故要给被解构的对象一个默认值。
+ES6 的解构赋值虽然好用。但是要注意解构的对象不能为`undefined`、`null`。否则会报错，故要给被解构的对象一个默认值。
 
 ```
 const {a,b,c,d,e} = obj || {};
@@ -96,9 +93,7 @@ const obj = Object.assgin({}, obj1, obj2);//{a:1,b:1}
 
 **吐槽**
 
-ES6的扩展运算符是不是忘记了，还有数组的合并不考虑去重吗？
-
-
+ES6 的扩展运算符是不是忘记了，还有数组的合并不考虑去重吗？
 
 **改进**
 
@@ -123,17 +118,15 @@ const name = '小明';
 const score = 59;
 let result = '';
 if(score > 60){
-  result = `${name}的考试成绩及格`; 
+  result = `${name}的考试成绩及格`;
 }else{
-  result = `${name}的考试成绩不及格`; 
+  result = `${name}的考试成绩不及格`;
 }
 ```
 
 **吐槽**
 
-像你们这样用ES6字符串模板，还不如不用，你们根本不清楚在`${}`中可以做什么操作。在`${}`中可以放入任意的JavaScript表达式，可以进行运算，以及引用对象属性。
-
-
+像你们这样用 ES6 字符串模板，还不如不用，你们根本不清楚在`${}`中可以做什么操作。在`${}`中可以放入任意的 JavaScript 表达式，可以进行运算，以及引用对象属性。
 
 **改进**
 
@@ -143,7 +136,7 @@ const score = 59;
 const result = `${name}${score > 60?'的考试成绩及格':'的考试成绩不及格'}`;
 ```
 
-## 四、关于if中判断条件的吐槽
+## 四、关于 if 中判断条件的吐槽
 
 ```
 if(
@@ -158,9 +151,7 @@ if(
 
 **吐槽**
 
-ES6中数组实例方法`includes`会不会使用呢？
-
-
+ES6 中数组实例方法`includes`会不会使用呢？
 
 **改进**
 
@@ -178,7 +169,7 @@ if( condition.includes(type) ){
 
 ```
 const a = [1,2,3,4,5];
-const result = a.filter( 
+const result = a.filter(
   item =>{
     return item === 3
   }
@@ -187,24 +178,29 @@ const result = a.filter(
 
 **吐槽**
 
-如果是精确搜索不会用ES6中的`find`吗？性能优化懂么，`find`方法中找到符合条件的项，就不会继续遍历数组。
-
-
+如果是精确搜索不会用 ES6 中的`find`吗？性能优化懂么，`find`方法中找到符合条件的项，就不会继续遍历数组。
 
 **改进**
 
 ```
 const a = [1,2,3,4,5];
-const result = a.find( 
+const result = a.find(
   item =>{
     return item === 3
   }
 )
+const b = [{name:2,age:3},{nam3:4,age:55}];
+const result2 = b.find(
+  item =>{
+    return item.name === 2
+  }
+)
+console.log(result2)
 ```
 
 ## 六、关于扁平化数组的吐槽
 
-一个部门JSON数据中，属性名是部门id，属性值是个部门成员id数组集合，现在要把有部门的成员id都提取到一个数组集合中。
+一个部门 JSON 数据中，属性名是部门 id，属性值是个部门成员 id 数组集合，现在要把有部门的成员 id 都提取到一个数组集合中。
 
 ```
 const deps = {
@@ -225,12 +221,10 @@ member = [...new Set(member)]
 
 **吐槽**
 
-**
-**
+\*\*
+\*\*
 
-获取对象的全部属性值还要遍历吗？`Object.values`忘记了吗？还有涉及到数组的扁平化处理，为啥不用ES6提供的`flat`方法呢，还好这次的数组的深度最多只到2维，还要是遇到4维、5维深度的数组，是不是得循环嵌套循环来扁平化？
-
-
+获取对象的全部属性值还要遍历吗？`Object.values`忘记了吗？还有涉及到数组的扁平化处理，为啥不用 ES6 提供的`flat`方法呢，还好这次的数组的深度最多只到 2 维，还要是遇到 4 维、5 维深度的数组，是不是得循环嵌套循环来扁平化？
 
 **改进**
 
@@ -246,11 +240,9 @@ let member = Object.values(deps).flat(Infinity);
 
 其中使用`Infinity`作为`flat`的参数，使得无需知道被扁平化的数组的维度。
 
-
-
 **补充**
 
-`flat`方法不支持IE浏览器。
+`flat`方法不支持 IE 浏览器。
 
 ## 七、关于获取对象属性值的吐槽
 
@@ -260,15 +252,16 @@ const name = obj && obj.name;
 
 **吐槽**
 
-ES6中的可选链操作符会使用么？
-
-
+ES6 中的可选链操作符会使用么？
 
 **改进**
 
 ```
 const name = obj?.name;
 ```
+
+const a = !!'a';
+console.log(a)
 
 ## 八、关于添加对象属性的吐槽
 
@@ -283,9 +276,7 @@ obj[key] = '话题内容';
 
 **吐槽**
 
-为何要额外创建一个变量。不知道ES6中的对象属性名是可以用表达式吗？
-
-
+为何要额外创建一个变量。不知道 ES6 中的对象属性名是可以用表达式吗？
 
 **改进**
 
@@ -307,7 +298,7 @@ if(value !== null && value !== undefined && value !== ''){
 
 **吐槽**
 
-ES6中新出的空值合并运算符了解过吗，要写那么多条件吗？
+ES6 中新出的空值合并运算符了解过吗，要写那么多条件吗？
 
 ```
 if(value??'' !== ''){
@@ -368,7 +359,7 @@ const fn = async () =>{
 const fn = () =>{
    Promise.all([fn1(),fn2()]).then(res =>{
        console.log(res);// [1,2]
-   }) 
+   })
 }
 ```
 
