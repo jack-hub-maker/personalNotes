@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" b="IE=edge" />
+    <meta name="viewport" b="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div class="wrapper">
+      <div class="box header">Header</div>
+      <div class="box sidebar">Sidebar</div>
+      <div class="box content">Content</div>
+    </div>
+  </body>
+  <style>
+    .sidebar {
+      grid-area: sidebar;
+    }
+
+    .content {
+      grid-area: content;
+    }
+
+    .header {
+      grid-area: header;
+    }
+
+    .wrapper {
+      margin: 50px;
+      display: grid;
+      grid-gap: 10px;
+      grid-template-columns: 120px 120px 120px;
+      grid-template-rows: 120px 100px 80px; /* 3.各区域 宽高设置 */
+
+      grid-template-areas:
+        "header header  header"
+        "sidebar content content"
+        "sidebar content content";
+
+      /* grid-template-areas:
+        "sidebar header  header"
+        "sidebar content content"
+        "sidebar content content"; */
+
+      /* grid-template-areas:
+        "header header  ."
+        "header header ."
+        ". sidebar content"; */
+
+      background-color: #fff;
+      color: #444;
+    }
+    .box {
+      background-color: #444;
+      color: #fff;
+      border-radius: 5px;
+      padding: 20px;
+      font-size: 150%;
+    }
+
+    .header {
+      background-color: #999;
+    }
+    /* .wrapper {
+      grid-template-areas:
+        "b b a"
+        "b b c"
+        "b b c";
+    } */
+  </style>
+</html>
